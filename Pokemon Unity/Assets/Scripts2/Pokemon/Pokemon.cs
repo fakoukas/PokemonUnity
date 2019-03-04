@@ -21,7 +21,7 @@ namespace PokemonUnity.Pokemon
             {
                 if (_base.BaseStatsHP == 1) return 1;
                 return //totalHP;
-                    ((2 * _base.BaseStatsHP + IV[0] + (EV[0] / 4)) * Level) / 100 + Level + 10;
+                    ((2 * _base.BaseStatsHP + IV[(int)Stats.HP] + (EV[(int)Stats.HP] / 4)) * Level) / 100 + Level + 10;
             }
         }
         /// <summary>
@@ -35,7 +35,7 @@ namespace PokemonUnity.Pokemon
         {
             get
             {
-                return (int)Math.Floor((((2 * _base.BaseStatsATK + IV[1] + (EV[1] / 4)) * Level) / 100 + 5) * natureFlag.ATK);
+                return (int)Math.Floor((((2 * _base.BaseStatsATK + IV[(int)Stats.ATTACK] + (EV[(int)Stats.ATTACK] / 4)) * Level) / 100 + 5) * natureFlag.ATK);
             }
         }
         /// <summary>
@@ -45,7 +45,7 @@ namespace PokemonUnity.Pokemon
         {
             get
             {
-                return (int)Math.Floor((((2 * _base.BaseStatsDEF + IV[2] + (EV[2] / 4)) * Level) / 100 + 5) * natureFlag.DEF);
+                return (int)Math.Floor((((2 * _base.BaseStatsDEF + IV[(int)Stats.DEFENSE] + (EV[(int)Stats.DEFENSE] / 4)) * Level) / 100 + 5) * natureFlag.DEF);
             }
         }
         /// <summary>
@@ -55,7 +55,7 @@ namespace PokemonUnity.Pokemon
         {
             get
             {
-                return (int)Math.Floor((((2 * _base.BaseStatsSPA + IV[4] + (EV[4] / 4)) * Level) / 100 + 5) * natureFlag.SPA);
+                return (int)Math.Floor((((2 * _base.BaseStatsSPA + IV[(int)Stats.SPATK] + (EV[(int)Stats.SPATK] / 4)) * Level) / 100 + 5) * natureFlag.SPA);
             }
         }
         /// <summary>
@@ -65,7 +65,7 @@ namespace PokemonUnity.Pokemon
         {
             get
             {
-                return (int)Math.Floor((((2 * _base.BaseStatsSPD + IV[5] + (EV[5] / 4)) * Level) / 100 + 5) * natureFlag.SPD);
+                return (int)Math.Floor((((2 * _base.BaseStatsSPD + IV[(int)Stats.SPDEF] + (EV[(int)Stats.SPDEF] / 4)) * Level) / 100 + 5) * natureFlag.SPD);
             }
         }
         /// <summary>
@@ -75,7 +75,7 @@ namespace PokemonUnity.Pokemon
         {
             get
             {
-                return (int)Math.Floor((((2 * _base.BaseStatsSPE + IV[3] + (EV[3] / 4)) * Level) / 100 + 5) * natureFlag.SPE);
+                return (int)Math.Floor((((2 * _base.BaseStatsSPE + IV[(int)Stats.SPEED] + (EV[(int)Stats.SPEED] / 4)) * Level) / 100 + 5) * natureFlag.SPE);
             }
         }
         /// <summary>
@@ -191,6 +191,9 @@ namespace PokemonUnity.Pokemon
         #endregion
 
         #region Constructor
+        /// <summary>
+        /// Uses PokemonData to initialize a Pokemon from base stats
+        /// </summary>
         public Pokemon()
         {
             _base = PokemonData.GetPokemon(Pokemons.NONE);
@@ -201,7 +204,7 @@ namespace PokemonUnity.Pokemon
             Ability = Abilities.NONE;
             natureFlag = new Nature();//(Natures)(Settings.Rand.Next(0, 24));
 			//ToDo: Maybe add TrainerId = <int> here, before isShiny()?
-			//shinyFlag = isShiny(); ToDo: Fix WildPokemon.TrainerId
+			//shinyFlag = IsShiny; //isShiny(); ToDo: Fix WildPokemon.TrainerId
 			//Gender = isMale();
 			//IV = new int[] { 10, 10, 10, 10, 10, 10 };
             IV = new byte[] { (byte)Settings.Rand.Next(32), (byte)Settings.Rand.Next(32), (byte)Settings.Rand.Next(32), (byte)Settings.Rand.Next(32), (byte)Settings.Rand.Next(32), (byte)Settings.Rand.Next(32) };
@@ -234,11 +237,41 @@ namespace PokemonUnity.Pokemon
             //calcStats();
         }
 
+		/// <summary>
+		/// Instializes a new Pokemon, with values at defaukt. 
+		/// Pokemon is created at the lowest possible level, 
+		/// with all stats randomly generated/assigned (new roll)
+		/// </summary>
+		/// <param name="pkmn">Pokemon being generated</param>
+		/// <param name="isEgg">Whether or not this level 
+		/// <see cref="Settings.EGGINITIALLEVEL"/> pokemon is hatched.</param>
         public Pokemon(Pokemons pkmn, bool isEgg) : this(pkmn) { if (!isEgg) EggSteps = 0; }
 
-        public Pokemon(Pokemons pkmn, byte level, bool isEgg = false) : this(pkmn, isEgg) { Level = level; } //Exp.AddExperience(Experience.GetStartExperience(GrowthRate, level));
+		/// <summary>
+		/// Instializes a new Pokemon, with values at defaukt. 
+		/// Pokemon is created at the level assigned in parameter, 
+		/// with all stats randomly generated/assigned (new roll)
+		/// </summary>
+		/// <param name="pkmn">Pokemon being generated</param>
+		/// <param name="level">Level this pokemon start ats</param>
+		/// <param name="isEgg">Whether or not this pokemon is hatched; 
+		/// if pokemon <see cref="isEgg"/> is false, it loses benefits 
+		/// of learning egg moves</param>
+		public Pokemon(Pokemons pkmn, byte level, bool isEgg = false) : this(pkmn, isEgg) { Level = level; GenerateMoveset(); }
 
-        //public Pokemon(Pokemons pkmn, byte loLevel, byte hiLevel, bool isEgg = false) : this(pkmn, isEgg) {  }
+		//public Pokemon(Pokemons pkmn, byte loLevel, byte hiLevel, bool isEgg = false) : this(pkmn, isEgg) {  }
+
+		/// <summary>
+		/// Instializes a new Pokemon, with values at defaukt. 
+		/// Pokemon is created at the level assigned in parameter, 
+		/// with all stats randomly generated/assigned (new roll).
+		/// </summary>
+		/// <param name="pkmn">Pokemon being generated</param>
+		/// <param name="original">Assigns original <see cref="Trainer"/> 
+		/// of this pokemon. 
+		/// Affects ability to command pokemon, if player is not OT</param>
+		/// <param name="level">Level this pokemon start ats</param>
+		public Pokemon(Pokemons pkmn, Trainer original, byte level = Settings.EGGINITIALLEVEL) : this(pkmn, level: level, isEgg: false) { OT = original; }
 
         public Pokemon(Pokemons TPSPECIES = Pokemons.NONE,
             byte TPLEVEL = 10,
@@ -256,8 +289,8 @@ namespace PokemonUnity.Pokemon
             int TPHAPPINESS = 70,
             string TPNAME = null,
             bool TPSHADOW = false,
-            //bool EGG = false,
-            Items TPBALL = Items.NONE) : this(TPSPECIES, level: TPLEVEL)
+            bool EGG = false,
+            Items TPBALL = Items.NONE) : this(TPSPECIES, level: TPLEVEL, isEgg: EGG)
         {
             //Random rand = new Random(Settings.Seed());//(int)TPSPECIES+TPLEVEL
             IV = TPIV ?? IV;
@@ -266,22 +299,56 @@ namespace PokemonUnity.Pokemon
             //calcStats();
         }
 
-        public Pokemon(string nickName, int form,
-            Pokemons species, Abilities ability,
-            Natures nature,
+		/// <summary>
+		/// This is used SPECIFICALLY for regenerating a pokemon from a serialized variable
+		/// </summary>
+		/// <param name="species"></param>
+		/// <param name="original"></param>
+		/// <param name="nickName"></param>
+		/// <param name="form"></param>
+		/// <param name="ability"></param>
+		/// <param name="nature"></param>
+		/// <param name="isShiny"></param>
+		/// <param name="gender"></param>
+		/// <param name="pokerus"></param>
+		/// <param name="ishyper"></param>
+		/// <param name="shadowLevel"></param>
+		/// <param name="currentHp"></param>
+		/// <param name="item"></param>
+		/// <param name="iv"></param>
+		/// <param name="ev"></param>
+		/// <param name="obtainedLevel"></param>
+		/// <param name="currentExp"></param>
+		/// <param name="happiness"></param>
+		/// <param name="status"></param>
+		/// <param name="statusCount"></param>
+		/// <param name="eggSteps"></param>
+		/// <param name="ballUsed"></param>
+		/// <param name="mail"></param>
+		/// <param name="moves"></param>
+		/// <param name="ribbons"></param>
+		/// <param name="markings"></param>
+		/// <param name="personalId"></param>
+		/// <param name="obtainedMethod"></param>
+		/// <param name="timeReceived"></param>
+		/// <param name="timeEggHatched"></param>
+        public Pokemon(Pokemons species, 
+			Trainer original,
+			string nickName, int form,
+            Abilities ability, Natures nature,
             bool isShiny, bool? gender,
-            int[] pokerus, int pokerusStrain,
+            int[] pokerus, bool ishyper,
             int? shadowLevel,
             int currentHp, Items item,
             byte[] iv, byte[] ev, 
-            int obtainedLevel, int currentLevel, int currentExp,
+            int obtainedLevel, /*int currentLevel,*/ int currentExp,
             int happiness, Status status, int statusCount,
             int eggSteps, Items ballUsed,
             string mail, Move[] moves,
             Ribbon[] ribbons, bool[] markings,
             int personalId,
             ObtainedMethod obtainedMethod,
-            DateTimeOffset timeReceived, DateTimeOffset? timeEggHatched) : this(species)
+            DateTimeOffset timeReceived, DateTimeOffset? timeEggHatched) : this(species, original)
         {
             //Check to see if nickName is filled
             if (nickName != null || nickName != string.Empty)
@@ -299,12 +366,14 @@ namespace PokemonUnity.Pokemon
             Ability = ability;
             natureFlag = new Nature(nature);
 
+            PersonalId = personalId;
+
             shinyFlag = isShiny;
             Gender = gender;
 
             this.pokerus = pokerus;
 
-            isHyperMode = isHyperMode;
+            isHyperMode = ishyper;
             ShadowLevel = shadowLevel;
 
             HP = currentHp;
@@ -314,7 +383,7 @@ namespace PokemonUnity.Pokemon
             EV = ev;
 
             ObtainLevel = obtainedLevel;
-            Level = currentLevel;
+            //Level = currentLevel;
             Exp.AddExperience(currentExp);
 
             Happiness = happiness;
@@ -336,11 +405,9 @@ namespace PokemonUnity.Pokemon
             this.ribbons = ribbons.ToList();
             Markings = markings;
 
-            PersonalId = personalId;
-
             ObtainedMode = obtainedMethod;
-            TimeReceived = timeReceived;
-            TimeEggHatched = timeEggHatched;
+            obtainWhen = timeReceived;
+            hatchedWhen = timeEggHatched;
         }
         #endregion
 
@@ -370,6 +437,8 @@ namespace PokemonUnity.Pokemon
         /// <summary>
         /// Replaces the obtain map's name if not null
         /// </summary>
+		/// ToDo: if (isOutside) return generic "got from player"
+		/// else, all data stored in class remains unchanged to OT?
         private string obtainString { get; set; }
         //private int obtainLevel; // = 0;
         private System.DateTimeOffset obtainWhen { get; set; }
@@ -380,7 +449,7 @@ namespace PokemonUnity.Pokemon
         /// <remarks>
         /// ToDo: PlayerTrainer's hash value instead of class; maybe GUID?
         /// </remarks>
-        private Trainer OT { get; set; }
+        public Trainer OT { get; private set; }
         /// <summary>
         /// Personal/Pokemon ID
         /// </summary>
@@ -388,7 +457,7 @@ namespace PokemonUnity.Pokemon
         public int PersonalId { get; private set; }
 
         /// <summary>
-        /// Returns whether or not the specified Trainer is the NOT this Pokemon's original trainer
+        /// Returns whether or not the specified Trainer is NOT this Pokemon's original trainer
         /// </summary>
         /// <param name="trainer"></param>
         /// <returns></returns>
@@ -456,7 +525,7 @@ namespace PokemonUnity.Pokemon
                 if (obtainWhen == null) this.obtainWhen = DateTimeOffset.UtcNow;
                 return this.obtainWhen;
             }
-            set { this.obtainWhen = value; }
+            //set { this.obtainWhen = value; }
         }
 
         /*// <summary>
@@ -500,7 +569,7 @@ namespace PokemonUnity.Pokemon
 					//throw new Exception("Trainer did not acquire Pokemon as an egg."); //No Exceptions...
 					return null;
             }
-            set { this.hatchedWhen = value; }
+            //set { this.hatchedWhen = value; }
         }
         #endregion
 
@@ -851,15 +920,23 @@ namespace PokemonUnity.Pokemon
 			//Uses math to determine if Pokemon is shiny.
             get
 			{
+				//Don't bother to generate math for a null value; skip the process...
+				if (Species == Pokemons.NONE) return false;
 				//return shinyFlag ?? isShiny();
-				if (shinyFlag.HasValue) return shinyFlag.Value;
+				if (shinyFlag != null && shinyFlag.HasValue) return shinyFlag.Value;
 				// Use this when rolling for shiny...
 				// Honestly, without this math, i probably would've done something a lot more primative.
 				// Look forward to primative math on wild pokemon encounter chances...
-				int a = this.PersonalId ^ int.Parse(this.OT.PlayerID);//this.TrainerId; //Wild Pokemon TrainerId?
-				int b = a & 0xFFFF;
-				int c = (a >> 16) & 0xFFFF;
-				int d = b ^ c;
+				//ToDo: Need default value for if/when Trainer is NULL...
+				//int a = OT == null? this.PersonalId : this.PersonalId ^ int.Parse(this.OT.PlayerID);//this.TrainerId; //Wild Pokemon TrainerId?
+				//int b = a & 0xFFFF;
+				//int c = (a >> 16) & 0xFFFF;
+				//int d = b ^ c;
+				//New Math Equation from Bulbapedia, gen 2 to 6...
+				//int d = (OT.TrainerID ^ OT.SecretID) ^ (PersonalId / 65536) ^ (PersonalId % 65536);
+				//int d = (GameVariables.playerTrainer.Trainer.TrainerID ^ GameVariables.playerTrainer.Trainer.SecretID) ^ (PersonalId / 65536) ^ (PersonalId % 65536);
+				//If Pokemons are caught already `OT` -> the math should be set, else generate new values from current player
+				int d = ((!OT.Equals((object)null)? OT.TrainerID : GameVariables.playerTrainer.Trainer.TrainerID) ^ (!OT.Equals((object)null) ? OT.SecretID : GameVariables.playerTrainer.Trainer.SecretID)) ^ (PersonalId / 65536) ^ (PersonalId % 65536);
 				shinyFlag = d < _base.ShinyChance;
 				return shinyFlag.Value;
 			}
